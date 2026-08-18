@@ -2,8 +2,28 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, requireOrg } from "../lib/middleware";
 import { asyncHandler } from "../lib/helpers";
-import { billingView, createCheckout, PLANS } from "../lib/billing";
+import { billingView, createCheckout, PLANS, verifyStripeWebhook, handleStripeEvent } from "../lib/billing";
+import { env } from "../env";
 import { audit } from "../lib/audit";
+
+/** Webhook de Stripe (público, verifica la firma). Montado en app.ts antes del router autenticado. */
+export const stripeWebhook = Router();
+
+stripeWebhook.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    if (!env.STRIPE_WEBHOOK_SECRET) {
+      return res.status(503).json({ error: "STRIPE_WEBHOOK_SECRET no configurado" });
+    }
+    const rawBody = (req as any).rawBody || Buffer.from(JSON.stringify(req.body || {}));
+    const signature = String(req.headers["stripe-signature"] || "");
+    if (!verifyStripeWebhook(env.STRIPE_WEBHOOK_SECRET, rawBody, signature)) {
+      return res.status(401).json({ error: "Firma de Stripe inválida" });
+    }
+    const result = await handleStripeEvent(req.body);
+    res.json({ received: true, ...result });
+  })
+);
 
 const r = Router();
 r.use(requireAuth, requireOrg);

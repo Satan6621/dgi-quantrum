@@ -126,6 +126,17 @@ export const openapi: Record<string, unknown> = {
         responses: { "200": { description: "Lead atendido" } },
       },
     },
+    "/api/billing/webhook": {
+      post: {
+        tags: ["billing"],
+        summary: "Webhook de Stripe (checkout.session.completed, invoice.payment_failed, customer.subscription.deleted). Firma verificada con STRIPE_WEBHOOK_SECRET.",
+        responses: {
+          "200": { description: "Evento procesado" },
+          "401": { description: "Firma inválida" },
+          "503": { description: "STRIPE_WEBHOOK_SECRET no configurado" },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {

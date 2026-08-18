@@ -12,6 +12,8 @@ export default defineConfig({
       JWT_SECRET: "naio-test-secret",
       // Activa la verificación de firma Twilio en los tests del webhook entrante
       TWILIO_AUTH_TOKEN: "test-twilio-token",
+      // Verificación del webhook de Stripe
+      STRIPE_WEBHOOK_SECRET: "test-stripe-secret",
     },
     hookTimeout: 30000,
     testTimeout: 20000,

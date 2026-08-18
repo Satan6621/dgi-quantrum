@@ -3,6 +3,7 @@ import { app } from "./app";
 import { env } from "./env";
 import { sendEmail } from "./lib/email";
 import { processEscalations } from "./lib/sla";
+import { checkExpiredPlans } from "./lib/billing";
 
 /** Scheduler de follow-ups: cada 60s envía los vencidos (email/WhatsApp según configuración). */
 async function processDueFollowUps() {
@@ -48,5 +49,6 @@ app.listen(env.PORT, () => {
   setInterval(() => {
     void processDueFollowUps();
     void processEscalations();
+    void checkExpiredPlans();
   }, 60_000);
 });

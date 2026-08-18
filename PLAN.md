@@ -148,7 +148,7 @@ Estados por sesión guardados en `Session.meta`. Los mensajes se persisten en `M
 | Analítica | `GET /api/analytics/overview`, `/funnel`, `/timeseries`, `/score-distribution`, `/distributors`, `/variants`, `/velocity`, `/sources`, `/cohorts`, `/executive` |
 | Webhooks | `POST /api/webhooks/:orgSlug/whatsapp` (Twilio con `X-Twilio-Signature` o Meta con `X-Hub-Signature-256` + verificación GET), `/generic`, `/calcom`, `POST /api/webhooks/simulate/:orgSlug/:channel` |
 | Red (downline) | `GET /api/downline/overview`, `GET /api/downline/tree` |
-| Billing | `GET /api/billing`, `GET /api/billing/plans`, `POST /api/billing/checkout` |
+| Billing | `GET /api/billing`, `GET /api/billing/plans`, `POST /api/billing/checkout`, `POST /api/billing/webhook` (Stripe firmado) |
 | API Keys | CRUD `/api/keys` |
 | Equipo | `GET /api/team`, `POST /api/team/invite`, `PATCH /api/team/:id`, `DELETE /api/team/:id` |
 | Auditoría | `GET /api/audit` (paginado + filtro por acción) |
@@ -299,6 +299,23 @@ Estados por sesión guardados en `Session.meta`. Los mensajes se persisten en `M
       (simulado/Twilio/Meta), funnel destino, secret y credenciales de Meta, guardando los settings
       sin pisar el resto de la configuración.
 - [x] **94 tests** (17 archivos) + E2E en vivo (firmas válidas/inválidas de Twilio y Meta, hub.challenge).
+
+### Fase 9 — Stripe real (pagos confirmados por webhook)
+- [x] **Checkout real**: `POST /api/billing/checkout` crea una sesión de Stripe Checkout (subscription)
+      con `metadata[orgId]`/`metadata[plan]`; si no hay clave sigue el modo simulado (demo).
+- [x] **Webhook firmado**: `POST /api/billing/webhook` (público, montado antes del router autenticado)
+      verifica `Stripe-Signature` (`t=...,v1=hmac-sha256(secret, ts + "." + rawBody)`) → 401 si es inválida,
+      503 si no hay `STRIPE_WEBHOOK_SECRET`.
+- [x] **Eventos procesados**: `checkout.session.completed` (activa el plan, guarda `stripeCustomerId`/
+      `stripeSubscriptionId`/`periodEnd`, crea la factura con `stripeId` **idempotente** y notifica),
+      `invoice.payment_failed` (estado PAST_DUE + notificación) y `customer.subscription.deleted`
+      (degradación a TRIAL).
+- [x] **Caducidad de plan**: el scheduler degrada automáticamente a TRIAL los planes ACTIVE vencidos y
+      notifica; `billingView` expone `expired`, `periodEnd` y `mode`.
+- [x] **UI en *Plan y facturación***: badge de estado vencido, fecha de renovación y modo de pago
+      (Stripe / Simulado), con aviso si la suscripción expiró.
+- [x] **100 tests** (18 archivos) + E2E en vivo (firma inválida, pago completado, plan activado,
+      factura creada, PAST_DUE y degradación).
 
 ---
 

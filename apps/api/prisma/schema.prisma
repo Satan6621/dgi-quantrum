@@ -260,6 +260,7 @@ model Invoice {
   currency    String       @default("usd")
   status      String       @default("PAID")
   description String
+  stripeId    String?
   createdAt   DateTime     @default(now())
   org         Organization @relation(fields: [orgId], references: [id])
 }

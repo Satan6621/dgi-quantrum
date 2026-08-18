@@ -49,13 +49,25 @@ export default function AdminBillingPage() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Badge className="bg-brand-600/20 text-brand-200 border-brand-500/30">Plan actual: {billing?.planName} (${billing?.price}/mes)</Badge>
-        <Badge className={billing?.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" : "bg-amber-500/15 text-amber-300 border-amber-400/30"}>
-          {billing?.status}
+        <Badge className={billing?.expired ? "bg-rose-500/15 text-rose-300 border-rose-400/30" : billing?.status === "ACTIVE" ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/30" : "bg-amber-500/15 text-amber-300 border-amber-400/30"}>
+          {billing?.expired ? "VENCIDO" : billing?.status}
+        </Badge>
+        {billing?.periodEnd && !billing?.expired && (
+          <Badge className="bg-white/5 text-slate-300 border-white/10">Renovación: {new Date(billing.periodEnd).toLocaleDateString()}</Badge>
+        )}
+        <Badge className="bg-white/5 text-slate-300 border-white/10">
+          Pago: {billing?.mode === "stripe" ? "Stripe" : billing?.mode === "simulate" ? "Simulado (demo)" : "—"}
         </Badge>
         <Badge className="bg-white/5 text-slate-300 border-white/10">
           Uso: {billing?.usage.distributors}/{billing?.limits.distributors === Infinity ? "∞" : billing?.limits.distributors} distribuidores · {billing?.usage.leads}/{billing?.limits.leads === Infinity ? "∞" : billing?.limits.leads} leads · {billing?.usage.brain}/{billing?.limits.brain === Infinity ? "∞" : billing?.limits.brain} brain
         </Badge>
       </div>
+
+      {billing?.expired && (
+        <p className="rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-2.5 text-xs text-rose-300">
+          Tu suscripción venció. Tu cuenta está en Prueba gratuita: suscríbete de nuevo para recuperar el plan.
+        </p>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
@@ -108,7 +120,7 @@ export default function AdminBillingPage() {
       </Card>
 
       <p className="flex items-center gap-1.5 text-[11px] text-slate-600">
-        <ShieldCheck className="h-3.5 w-3.5" /> Si se supera un límite del plan, la plataforma responde 402 y te invita a actualizar. Sin tarjeta configurada (demo), el checkout es simulado.
+        <ShieldCheck className="h-3.5 w-3.5" /> Si se supera un límite del plan, la plataforma responde 402 y te invita a actualizar. Con Stripe configurado, el pago se confirma por webhook firmado (<code className="text-slate-500">/api/billing/webhook</code>); sin tarjeta (demo) el checkout es simulado.
       </p>
     </div>
   );

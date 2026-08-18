@@ -25,7 +25,7 @@ Documentación completa de arquitectura y roadmap: [`PLAN.md`](./PLAN.md)
 | 🔎 **RAG híbrido** | Recuperación del cerebro combinando solapamiento léxico + **embeddings locales** (sin dependencias ni coste). |
 | 🔔 **Webhooks + canales** | WhatsApp/Twilio/Meta y Cal.com con entrada real, salida Twilio o **simulada**, log por evento y **simulador** en el panel. |
 | 📅 **Notificaciones** | Campana in-app con polling: leads nuevos, handoff, comisiones, bookings y gamificación. |
-| 💳 **Billing** | Planes STARTER/GROWTH/SCALE con límites (crear sobre el límite → **402**); checkout Stripe real o **simulado**. |
+| 💳 **Billing** | Planes STARTER/GROWTH/SCALE con límites (crear sobre el límite → **402**); checkout **Stripe real** confirmado por **webhook firmado** (o simulado en demo), facturación idempotente, pago rechazado y degradación automática de planes vencidos. |
 | 🌳 **Red (downline)** | Árbol de patrocinio, **compensación en 3 niveles** y gamificación (puntos, niveles y badges). |
 | 🧪 **A/B testing** | Variantes de tono/presentación por funnel con asignación estable por visitante y métricas por variante. |
 | 🔑 **API pública** | Claves con scopes + rate-limit, endpoints `/api/v1` y **exportación** CSV/JSON con BOM. |
@@ -34,7 +34,7 @@ Documentación completa de arquitectura y roadmap: [`PLAN.md`](./PLAN.md)
 | ✉️ **Email** | Follow-ups y bienvenidas por SMTP (nodemailer) cuando lo configuras. |
 | 🛡️ **Hardening** | Helmet, rate-limiting global y en login, límite de body, sin `x-powered-by`. |
 | 📚 **Docs API** | OpenAPI 3.0 + Swagger UI en `/api/docs`. |
-| 🧪 **Tests** | 94 tests automatizados (vitest + supertest) contra BD aislada. |
+| 🧪 **Tests** | 100 tests automatizados (vitest + supertest) contra BD aislada. |
 | 🐳 **Docker + CI** | Dockerfiles multi-stage, `docker-compose.yml` y CI en GitHub Actions. |
 | 🧑‍💼 **Equipo** | Invita miembros con roles, contraseña temporal, activar/desactivar y eliminar. |
 | 🔑 **Sesión robusta** | Access token corto + **refresh rotativo** revocable; renovación automática en el frontend. |
@@ -75,7 +75,7 @@ npm run dev        # API → http://localhost:4000 · Web → http://localhost:5
 ### Tests
 
 ```bash
-cd apps/api && npm test        # prepara BD de test (test.db) y ejecuta los 94 tests
+cd apps/api && npm test        # prepara BD de test (test.db) y ejecuta los 100 tests
 ```
 
 ### Docker (producción)
@@ -108,7 +108,9 @@ docker compose up --build      # API → http://localhost:4000 · Web → http:/
 7. En *Simulador* escribe un mensaje entrante de WhatsApp y observa al sistema crear el lead, responder y
    guardar el `WebhookLog`.
 8. En *API Keys* crea una clave y prueba `GET http://localhost:4000/api/v1/leads` con el header `X-API-Key`.
-9. En *Plan y facturación* cambia de plan (simulado) y en *Exportar datos* descarga CSV/JSON.
+9. En *Plan y facturación* cambia de plan: con `STRIPE_SECRET_KEY` configurado te lleva a **Stripe Checkout**
+   y el pago se confirma por webhook (`STRIPE_WEBHOOK_SECRET` en `POST /api/billing/webhook`); sin clave es simulado.
+   En *Exportar datos* descarga CSV/JSON.
 10. En *Admin → Central AI Brain → Probar IA* escribe una pregunta y observa la respuesta con sus fuentes (RAG).
     Luego en *Organización* baja el **SLA de handoff** y deja un lead en handoff sin atender: en unos minutos verás la notificación de **escalado**.
 11. En *Analítica* mira los nuevos KPIs de **velocidad** (tiempo medio a handoff, respuesta del distribuidor, SLA y latencia IA),
@@ -147,7 +149,7 @@ network-ai-os/
 │   ├── api/                  # Backend Express + Prisma
 │   │   ├── prisma/           # schema + seed demo
 │   │   ├── scripts/          # pretest.mjs (BD de test + vitest)
-│   │   ├── tests/            # suite vitest + supertest (94 tests)
+│   │   ├── tests/            # suite vitest + supertest (100 tests)
 │   │   ├── Dockerfile        # imagen multi-stage de la API
 │   │   └── src/
 │   │       ├── app.ts        # app Express (hardening, rate-limit, docs)
