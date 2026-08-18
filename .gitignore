@@ -1,0 +1,34 @@
+# Dependencias
+node_modules/
+
+# Entorno y secretos
+.env
+.env.*
+!.env.example
+apps/api/.env
+apps/web/.env
+
+# Bases de datos (SQLite)
+*.db
+*.db-journal
+prisma/*.db
+apps/api/prisma/*.db
+apps/api/prisma/test.db
+
+# Builds
+dist/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Sistema / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Cobertura y reportes
+coverage/

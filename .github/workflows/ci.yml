@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: API install
+        working-directory: apps/api
+        run: npm ci
+
+      - name: Web install
+        working-directory: apps/web
+        run: npm ci
+
+      - name: Prisma generate
+        working-directory: apps/api
+        run: npx prisma generate
+
+      - name: API typecheck + build
+        working-directory: apps/api
+        run: npm run build
+
+      - name: API tests
+        working-directory: apps/api
+        run: npm test
+
+      - name: Web build
+        working-directory: apps/web
+        run: npm run build

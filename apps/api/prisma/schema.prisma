@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PLATFORM
+  ADMIN
+  MANAGER
+  DISTRIBUTOR
+}
+
+model Organization {
+  id               String             @id @default(cuid())
+  name             String
+  slug             String             @unique
+  logoUrl          String?
+  primaryColor     String             @default("#6366f1")
+  settings         String             @default("{}")
+  plan             String             @default("STARTER")
+  billing          String             @default("{}")
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  users            User[]
+  brainItems       BrainItem[]
+  sequences        SequenceTemplate[]
+  distributors     Distributor[]
+  leads            Lead[]
+  sessions         Session[]
+  followUps        FollowUp[]
+  onboardingTasks  OnboardingTask[]
+  notifications    Notification[]
+  apiKeys          ApiKey[]
+  invoices         Invoice[]
+  commissions      Commission[]
+  webhookLogs      WebhookLog[]
+  auditLogs        AuditLog[]
+}
+
+model User {
+  id           String          @id @default(cuid())
+  orgId        String?
+  role         Role            @default(DISTRIBUTOR)
+  email        String          @unique
+  name         String
+  passwordHash String
+  active       Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  distributor  Distributor?
+  org          Organization?   @relation(fields: [orgId], references: [id])
+  refreshTokens RefreshToken[]
+  auditLogs    AuditLog[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String?
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  meta      String   @default("{}")
+  createdAt DateTime @default(now())
+  org       Organization? @relation(fields: [orgId], references: [id])
+  user      User?         @relation(fields: [userId], references: [id])
+
+  @@index([orgId, createdAt])
+}
+
+model Distributor {
+  id            String        @id @default(cuid())
+  orgId         String
+  userId        String        @unique
+  name          String
+  slug          String        @unique
+  avatarUrl     String?
+  tone          String        @default("profesional")
+  presentation  String        @default("")
+  language      String        @default("es")
+  zone          String?
+  whatsapp      String?
+  calendarUrl   String?
+  socialLinks   String        @default("{}")
+  availability  String        @default("{}")
+  funnelEnabled Boolean       @default(true)
+  status        String        @default("ACTIVE")
+  sponsorId     String?
+  points        Int           @default(0)
+  level         String        @default("BRONZE")
+  badges        String        @default("[]")
+  commissionBalance Float     @default(0)
+  variants      String        @default("[]")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id])
+  org           Organization  @relation(fields: [orgId], references: [id])
+  sponsor       Distributor?  @relation("SponsorTree", fields: [sponsorId], references: [id])
+  downline      Distributor[] @relation("SponsorTree")
+  leads         Lead[]
+  sessions      Session[]
+  commissions   Commission[]
+  notifications Notification[]
+}
+
+model BrainItem {
+  id        String        @id @default(cuid())
+  orgId     String
+  category  String
+  title     String
+  content   String
+  keywords  String        @default("")
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  org       Organization  @relation(fields: [orgId], references: [id])
+}
+
+model SequenceTemplate {
+  id        String        @id @default(cuid())
+  orgId     String
+  name      String
+  trigger   String        @default("NUTRICION")
+  steps     String        @default("[]")
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  org       Organization  @relation(fields: [orgId], references: [id])
+}
+
+model Lead {
+  id            String            @id @default(cuid())
+  orgId         String
+  distributorId String?
+  name          String?
+  email         String?
+  phone         String?
+  source        String            @default("funnel")
+  status        String            @default("NEW")
+  score         Int               @default(0)
+  intentLevel   String?
+  outcome       String?
+  firstSeen     DateTime          @default(now())
+  lastActivity  DateTime          @default(now())
+  handoffAt     DateTime?
+  activatedAt   DateTime?
+  meta          String            @default("{}")
+  createdAt     DateTime          @default(now())
+  org           Organization      @relation(fields: [orgId], references: [id])
+  distributor   Distributor?      @relation(fields: [distributorId], references: [id])
+  sessions      Session[]
+  followUps     FollowUp[]
+  tasks         OnboardingTask[]
+}
+
+model Session {
+  id            String       @id @default(cuid())
+  orgId         String
+  distributorId String?
+  leadId        String?
+  channel       String       @default("chat")
+  variant       String       @default("base")
+  meta          String       @default("{}")
+  startedAt     DateTime     @default(now())
+  endedAt       DateTime?
+  org           Organization @relation(fields: [orgId], references: [id])
+  distributor   Distributor? @relation(fields: [distributorId], references: [id])
+  lead          Lead?        @relation(fields: [leadId], references: [id])
+  messages      Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String
+  content   String
+  score     Int?
+  tags      String?
+  ts        DateTime @default(now())
+  session   Session  @relation(fields: [sessionId], references: [id])
+}
+
+model FollowUp {
+  id         String       @id @default(cuid())
+  orgId      String
+  leadId     String
+  templateId String?
+  stepIndex  Int          @default(0)
+  title      String       @default("Seguimiento")
+  content    String
+  channel    String       @default("whatsapp")
+  dueAt      DateTime
+  sentAt     DateTime?
+  status     String       @default("PENDING")
+  createdAt  DateTime     @default(now())
+  org        Organization @relation(fields: [orgId], references: [id])
+  lead       Lead         @relation(fields: [leadId], references: [id])
+}
+
+model OnboardingTask {
+  id        String       @id @default(cuid())
+  orgId     String
+  leadId    String
+  title     String
+  order     Int          @default(0)
+  completed Boolean      @default(false)
+  dueAt     DateTime?
+  createdAt DateTime     @default(now())
+  org       Organization @relation(fields: [orgId], references: [id])
+  lead      Lead         @relation(fields: [leadId], references: [id])
+}
+
+model Notification {
+  id            String       @id @default(cuid())
+  orgId         String
+  distributorId String?
+  title         String
+  body          String
+  type          String       @default("info")
+  read          Boolean      @default(false)
+  link          String?
+  createdAt     DateTime     @default(now())
+  org           Organization @relation(fields: [orgId], references: [id])
+  distributor   Distributor? @relation(fields: [distributorId], references: [id])
+}
+
+model ApiKey {
+  id          String       @id @default(cuid())
+  orgId       String
+  name        String
+  keyPrefix   String
+  keyHash     String
+  scopes      String       @default("[]")
+  revoked     Boolean      @default(false)
+  lastUsedAt  DateTime?
+  createdAt   DateTime     @default(now())
+  org         Organization @relation(fields: [orgId], references: [id])
+}
+
+model Invoice {
+  id          String       @id @default(cuid())
+  orgId       String
+  plan        String
+  amount      Float
+  currency    String       @default("usd")
+  status      String       @default("PAID")
+  description String
+  createdAt   DateTime     @default(now())
+  org         Organization @relation(fields: [orgId], references: [id])
+}
+
+model Commission {
+  id            String       @id @default(cuid())
+  orgId         String
+  distributorId String
+  leadId        String?
+  type          String
+  amount        Float
+  description   String
+  createdAt     DateTime     @default(now())
+  org           Organization @relation(fields: [orgId], references: [id])
+  distributor   Distributor  @relation(fields: [distributorId], references: [id])
+}
+
+model WebhookLog {
+  id        String       @id @default(cuid())
+  orgId     String
+  provider  String
+  payload   String
+  status    String
+  createdAt DateTime     @default(now())
+  org       Organization @relation(fields: [orgId], references: [id])
+}
