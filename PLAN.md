@@ -146,7 +146,7 @@ Estados por sesión guardados en `Session.meta`. Los mensajes se persisten en `M
 | Follow-ups | `GET /api/followups` (paginado; scheduler interno con email opcional) |
 | Onboarding | tareas por lead + duplicación (`POST /api/leads/:id/activate`) |
 | Analítica | `GET /api/analytics/overview`, `/funnel`, `/timeseries`, `/score-distribution`, `/distributors`, `/variants`, `/velocity`, `/sources`, `/cohorts`, `/executive` |
-| Webhooks | `POST /api/webhooks/:orgSlug/whatsapp`, `/generic`, `/calcom`, `POST /api/webhooks/simulate/:orgSlug/:channel` |
+| Webhooks | `POST /api/webhooks/:orgSlug/whatsapp` (Twilio con `X-Twilio-Signature` o Meta con `X-Hub-Signature-256` + verificación GET), `/generic`, `/calcom`, `POST /api/webhooks/simulate/:orgSlug/:channel` |
 | Red (downline) | `GET /api/downline/overview`, `GET /api/downline/tree` |
 | Billing | `GET /api/billing`, `GET /api/billing/plans`, `POST /api/billing/checkout` |
 | API Keys | CRUD `/api/keys` |
@@ -285,6 +285,20 @@ Estados por sesión guardados en `Session.meta`. Los mensajes se persisten en `M
       "Exportar CSV".
 - [x] **86 tests** (16 archivos) + E2E en vivo (executive, velocity con datos del seed, canales,
       cohortes, export CSV y handoff marcado por el motor).
+
+### Fase 8 — Integración real de WhatsApp (Twilio y Meta Cloud API)
+- [x] **Verificación de firmas entrantes**: `X-Twilio-Signature` (HMAC-SHA1 base64 sobre la URL +
+      params ordenados) y `X-Hub-Signature-256` de Meta (HMAC-SHA256 sobre el raw del body). Payloads
+      con firma inválida → **401**. Meta requiere también la verificación GET del `hub.challenge`.
+- [x] **Adaptador de salida Meta**: si el canal usa `provider: "meta"`, las respuestas de la IA se
+      envían por WhatsApp Cloud API (`graph.facebook.com/v19.0`) con `metaToken`/`metaPhoneNumberId`;
+      Twilio sigue usando las credenciales de entorno; sin credenciales → simulado.
+- [x] **Mensajes entrantes reales**: se persiste el `sid` (Twilio) / `wamid` (Meta) en el `WebhookLog`
+      y el `MessageSid` se mapea para trazabilidad.
+- [x] **UI en *Admin → Webhooks***: tarjeta "Canal de entrada · WhatsApp" con proveedor
+      (simulado/Twilio/Meta), funnel destino, secret y credenciales de Meta, guardando los settings
+      sin pisar el resto de la configuración.
+- [x] **94 tests** (17 archivos) + E2E en vivo (firmas válidas/inválidas de Twilio y Meta, hub.challenge).
 
 ---
 

@@ -11,6 +11,7 @@ export interface InboundParams {
   distributorSlug?: string | null;
   from: string;
   text: string;
+  sid?: string;
 }
 
 /** Resuelve org y distribuidor destino, encuentra/crea el lead y ejecuta el funnel. */
@@ -57,7 +58,7 @@ export async function inboundMessage(p: InboundParams) {
     data: {
       orgId: p.org.id,
       provider: p.channel,
-      payload: JSON.stringify({ from: phone, text: p.text, reply: result.reply }),
+      payload: JSON.stringify({ from: phone, text: p.text, reply: result.reply, sid: p.sid ?? null }),
       status: sent.ok ? "processed" : "failed",
     },
   });

@@ -29,7 +29,11 @@ export const app = express();
 app.use(helmet());
 app.disable("x-powered-by");
 app.use(cors({ origin: env.CORS_ORIGIN.split(","), credentials: true }));
-app.use(express.json({ limit: "1mb" }));
+const captureRaw = (_req: express.Request, _res: express.Response, buf: Buffer) => {
+  (_req as any).rawBody = buf;
+};
+app.use(express.json({ limit: "1mb", verify: captureRaw }));
+app.use(express.urlencoded({ extended: false, verify: captureRaw }));
 
 // Rate-limit global por IP (defensa básica contra abuso)
 app.use(

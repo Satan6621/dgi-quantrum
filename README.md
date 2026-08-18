@@ -34,7 +34,7 @@ Documentación completa de arquitectura y roadmap: [`PLAN.md`](./PLAN.md)
 | ✉️ **Email** | Follow-ups y bienvenidas por SMTP (nodemailer) cuando lo configuras. |
 | 🛡️ **Hardening** | Helmet, rate-limiting global y en login, límite de body, sin `x-powered-by`. |
 | 📚 **Docs API** | OpenAPI 3.0 + Swagger UI en `/api/docs`. |
-| 🧪 **Tests** | 86 tests automatizados (vitest + supertest) contra BD aislada. |
+| 🧪 **Tests** | 94 tests automatizados (vitest + supertest) contra BD aislada. |
 | 🐳 **Docker + CI** | Dockerfiles multi-stage, `docker-compose.yml` y CI en GitHub Actions. |
 | 🧑‍💼 **Equipo** | Invita miembros con roles, contraseña temporal, activar/desactivar y eliminar. |
 | 🔑 **Sesión robusta** | Access token corto + **refresh rotativo** revocable; renovación automática en el frontend. |
@@ -47,6 +47,7 @@ Documentación completa de arquitectura y roadmap: [`PLAN.md`](./PLAN.md)
 | 👋 **Despedidas y enlaces** | Detecta cierres (adiós, hasta luego…) con respuesta cálida, y URLs invitan a seguir la conversación. |
 | 🌐 **Idioma** | Detección es/en/pt: los reconocimientos sin respuesta se devuelven en el idioma del prospecto. |
 | ⚡ **Analítica avanzada** | Velocidad del funnel (tiempo a handoff, respuesta del distribuidor, SLA, latencia IA), **conversión por canal**, **cohortes semanales**, panel **ejecutivo** agregado y export CSV. |
+| 📲 **WhatsApp real** | Webhook de entrada con **firma verificada** (Twilio `X-Twilio-Signature` o Meta `X-Hub-Signature-256`) y salida por Twilio o **Meta WhatsApp Cloud API**; configuración desde el panel. |
 
 ---
 
@@ -74,7 +75,7 @@ npm run dev        # API → http://localhost:4000 · Web → http://localhost:5
 ### Tests
 
 ```bash
-cd apps/api && npm test        # prepara BD de test (test.db) y ejecuta los 86 tests
+cd apps/api && npm test        # prepara BD de test (test.db) y ejecuta los 94 tests
 ```
 
 ### Docker (producción)
@@ -112,6 +113,8 @@ docker compose up --build      # API → http://localhost:4000 · Web → http:/
     Luego en *Organización* baja el **SLA de handoff** y deja un lead en handoff sin atender: en unos minutos verás la notificación de **escalado**.
 11. En *Analítica* mira los nuevos KPIs de **velocidad** (tiempo medio a handoff, respuesta del distribuidor, SLA y latencia IA),
     la **conversión por canal** (funnel vs WhatsApp vs referidos) y las **cohortes semanales**; descarga el **CSV ejecutivo**.
+12. En *Admin → Webhooks* configura el **canal de WhatsApp** (Twilio o Meta): conecta tu cuenta, apunta el webhook
+    `POST /api/webhooks/{orgSlug}/whatsapp` y escribe un mensaje real — la IA lo atiende y responde por el mismo canal.
 
 ---
 
@@ -144,17 +147,17 @@ network-ai-os/
 │   ├── api/                  # Backend Express + Prisma
 │   │   ├── prisma/           # schema + seed demo
 │   │   ├── scripts/          # pretest.mjs (BD de test + vitest)
-│   │   ├── tests/            # suite vitest + supertest (86 tests)
+│   │   ├── tests/            # suite vitest + supertest (94 tests)
 │   │   ├── Dockerfile        # imagen multi-stage de la API
 │   │   └── src/
 │   │       ├── app.ts        # app Express (hardening, rate-limit, docs)
 │   │       ├── index.ts      # bootstrap + scheduler (follow-ups + SLA)
 │   │       ├── routes/       # auth(+refresh/signup), team, audit, public(funnel), brain(+playground), org, distributors, leads, followups,
 │   │       │                 # analytics, webhooks(+simulador), downline, billing, keys, export, notifications, v1 (API pública)
-│   │       └── lib/          # aiEngine (pluggable + objeciones/despedidas/enlaces/idioma), rag, embeddings, scoring,
-│   │                         # conversation (memoria multi-turno), gamify, downline, channels, inbound, billing, apikey,
-│   │                         # notify, export, csv, email, outgoing (webhooks salida con HMAC), openapi, refresh, audit,
-│   │                         # provision, sla
+│       │   └── lib/          # aiEngine (pluggable + objeciones/despedidas/enlaces/idioma), rag, embeddings, scoring,
+│       │                         # conversation (memoria multi-turno), gamify, downline, channels, whatsapp (firmas Twilio/Meta),
+│       │                         # inbound, billing, apikey, notify, export, csv, email, outgoing (webhooks salida con HMAC),
+│       │                         # openapi, refresh, audit, provision, sla
 │   └── web/                  # Frontend React (dashboard dark + funnel público claro)
 │       ├── Dockerfile        # build + nginx (proxy /api)
 │       ├── nginx.conf

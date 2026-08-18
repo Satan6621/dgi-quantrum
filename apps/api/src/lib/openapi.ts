@@ -96,6 +96,36 @@ export const openapi: Record<string, unknown> = {
     "/api/health": {
       get: { tags: ["health"], summary: "Estado del servicio", responses: { "200": { description: "ok" } } },
     },
+    "/api/webhooks/{orgSlug}/whatsapp": {
+      get: {
+        tags: ["webhooks"],
+        summary: "Verificación del webhook de WhatsApp (Meta Cloud API)",
+        parameters: [
+          { in: "path", name: "orgSlug", required: true, schema: { type: "string" } },
+          { in: "query", name: "hub.mode", schema: { type: "string" } },
+          { in: "query", name: "hub.verify_token", schema: { type: "string" } },
+          { in: "query", name: "hub.challenge", schema: { type: "string" } },
+        ],
+        responses: { "200": { description: "Devuelve el challenge" }, "403": { description: "Token inválido" } },
+      },
+      post: {
+        tags: ["webhooks"],
+        summary: "Mensaje entrante de WhatsApp (Twilio o Meta). Firma verificada según proveedor.",
+        parameters: [{ in: "path", name: "orgSlug", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Lead atendido por la IA + respuesta por el canal" },
+          "401": { description: "Firma inválida (X-Twilio-Signature / X-Hub-Signature-256)" },
+        },
+      },
+    },
+    "/api/webhooks/{orgSlug}/generic": {
+      post: {
+        tags: ["webhooks"],
+        summary: "Mensaje entrante genérico {from, text}",
+        parameters: [{ in: "path", name: "orgSlug", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Lead atendido" } },
+      },
+    },
   },
   components: {
     securitySchemes: {

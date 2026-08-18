@@ -4,6 +4,8 @@ import { requireAuth, requireOrg } from "../lib/middleware";
 import { asyncHandler, safeParseJson } from "../lib/helpers";
 import { inboundMessage } from "../lib/inbound";
 import { channelCfg } from "../lib/channels";
+import { verifyTwilioSignature, verifyMetaSignature, parseTwilioPayload, parseMetaPayload, WsMessage } from "../lib/whatsapp";
+import { env } from "../env";
 import { notify } from "../lib/notify";
 import { fire } from "../lib/outgoing";
 
@@ -14,30 +16,65 @@ async function loadOrg(slug: string) {
 }
 
 /**
- * Endpoints públicos de integración (WhatsApp / Twilio / Cal.com / genérico).
- * La organización se identifica por su slug en la URL. Opcionalmente se exige
- * X-Webhook-Secret si la organización lo configura.
+ * Endpoints públicos de integración (WhatsApp / Twilio / Meta / Cal.com / genérico).
+ * La organización se identifica por su slug en la URL.
  */
+
+/** Verificación GET de webhook (Meta WhatsApp Cloud API): responde el challenge. */
+r.get(
+  "/:orgSlug/whatsapp",
+  asyncHandler(async (req, res) => {
+    const org = await loadOrg(req.params.orgSlug);
+    if (!org) return res.status(404).json({ error: "Organización no encontrada" });
+    const cfg = channelCfg(org, "whatsapp");
+    if (req.query["hub.mode"] === "subscribe" && req.query["hub.verify_token"] === cfg.metaVerifyToken) {
+      return res.send(String(req.query["hub.challenge"] ?? ""));
+    }
+    res.status(403).json({ error: "Verificación fallida" });
+  })
+);
+
 r.post(
   "/:orgSlug/whatsapp",
   asyncHandler(async (req, res) => {
     const org = await loadOrg(req.params.orgSlug);
     if (!org) return res.status(404).json({ error: "Organización no encontrada" });
     const cfg = channelCfg(org, "whatsapp");
-    if (cfg.webhookSecret && cfg.webhookSecret !== req.headers["x-webhook-secret"]) {
-      return res.status(401).json({ error: "Secret inválido" });
+    const provider = cfg?.provider === "meta" ? "meta" : "twilio";
+    const rawBody = (req as any).rawBody || Buffer.from(JSON.stringify(req.body || {}));
+    let parsed: WsMessage | null = null;
+
+    if (provider === "meta") {
+      const sig = String(req.headers["x-hub-signature-256"] || "");
+      if (!verifyMetaSignature(cfg.webhookSecret || "", rawBody, sig)) {
+        return res.status(401).json({ error: "Firma de Meta inválida" });
+      }
+      parsed = parseMetaPayload(req.body);
+    } else {
+      // Twilio: firma X-Twilio-Signature si hay credenciales; si no, X-Webhook-Secret opcional
+      if (cfg.webhookSecret && cfg.webhookSecret !== req.headers["x-webhook-secret"]) {
+        return res.status(401).json({ error: "Secret inválido" });
+      }
+      if (env.TWILIO_AUTH_TOKEN) {
+        const fullUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+        const params: Record<string, any> = { ...(req.body || {}), ...(req.query || {}) };
+        const sig = String(req.headers["x-twilio-signature"] || "");
+        if (!verifyTwilioSignature(env.TWILIO_AUTH_TOKEN, fullUrl, params, sig)) {
+          return res.status(401).json({ error: "Firma de Twilio inválida" });
+        }
+      }
+      parsed = parseTwilioPayload(req.body);
     }
-    const body = req.body || {};
-    const from = body.From || body.from || body.wa_id || body.sender;
-    const text = body.Body || body.body || body.text || body.message;
-    if (!from || !text) return res.status(400).json({ error: "Faltan 'from' y 'text'" });
+
+    if (!parsed) return res.status(400).json({ error: "Formato de mensaje no reconocido" });
     const distributorSlug = req.query.distributor ? String(req.query.distributor) : null;
     const result = await inboundMessage({
       org,
       channel: "whatsapp",
       distributorSlug,
-      from,
-      text,
+      from: parsed.from,
+      text: parsed.text,
+      sid: parsed.sid,
     });
     res.json(result);
   })

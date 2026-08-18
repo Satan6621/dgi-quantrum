@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Webhook, Plus, Pencil, Trash2, Zap, Eye, ChevronDown, RefreshCw } from "lucide-react";
+import { Webhook, Plus, Pencil, Trash2, Zap, Eye, ChevronDown, RefreshCw, MessageCircle } from "lucide-react";
 import { api } from "../../lib/api";
 import { Card, Input, Button, Badge, EmptyState, Spinner, Modal, Field, cn } from "../../components/ui";
 import { timeAgo } from "../../lib/format";
@@ -11,6 +11,15 @@ interface Hook {
   secret?: string;
   events: string[];
   enabled: boolean;
+}
+
+interface WsCfg {
+  provider: string;
+  distributorSlug: string;
+  webhookSecret: string;
+  metaVerifyToken: string;
+  metaToken: string;
+  metaPhoneNumberId: string;
 }
 
 const EVENT_LABEL: Record<string, string> = {
@@ -32,6 +41,10 @@ export default function AdminWebhooksPage() {
   const [logsOpen, setLogsOpen] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<Record<string, any>>({});
+  const [ws, setWs] = useState<WsCfg>({ provider: "simulate", distributorSlug: "", webhookSecret: "", metaVerifyToken: "", metaToken: "", metaPhoneNumberId: "" });
+  const [orgSettings, setOrgSettings] = useState<any>({});
+  const [savingWs, setSavingWs] = useState(false);
+  const [wsSaved, setWsSaved] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -41,8 +54,25 @@ export default function AdminWebhooksPage() {
       setEvents(d.events || []);
       const l = await api("/api/org/webhook-logs?pageSize=15");
       setLogs(l.items || []);
+      const o = await api("/api/org");
+      setOrgSettings(o.org.settings || {});
+      const ch = o.org.settings?.channels?.whatsapp || {};
+      setWs({ provider: ch.provider || "simulate", distributorSlug: ch.distributorSlug || "", webhookSecret: ch.webhookSecret || "", metaVerifyToken: ch.metaVerifyToken || "", metaToken: ch.metaToken || "", metaPhoneNumberId: ch.metaPhoneNumberId || "" });
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function saveWs() {
+    setSavingWs(true);
+    setWsSaved(false);
+    try {
+      const next = { ...orgSettings, channels: { ...(orgSettings.channels || {}), whatsapp: { ...ws } } };
+      await api("/api/org", { method: "PUT", body: JSON.stringify({ settings: next }) });
+      setOrgSettings(next);
+      setWsSaved(true);
+    } finally {
+      setSavingWs(false);
     }
   }
 
@@ -101,6 +131,52 @@ export default function AdminWebhooksPage() {
           <p className="text-sm text-slate-400">Recibe eventos de tu red en tu propio sistema. Cada envío se firma con HMAC-SHA256.</p>
         </div>
         <Button onClick={openNew}><Plus className="h-4 w-4" /> Nuevo webhook</Button>
+      </div>
+
+      <Card title="Canal de entrada · WhatsApp" subtitle="El endpoint recibe mensajes reales y la IA responde por el mismo canal.">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-ink-800/60 px-3 py-2 text-xs text-slate-400">
+            <MessageCircle className="h-4 w-4 text-brand-300" />
+            <span>Webhook: <code className="text-slate-200">POST {`/api/webhooks/{orgSlug}/whatsapp`}</code></span>
+            {ws.provider === "meta" && <span>· verificación GET (hub.challenge)</span>}
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Field label="Proveedor">
+              <select className="w-full cursor-pointer rounded-xl border border-white/10 bg-ink-800/70 px-3.5 py-2.5 text-sm text-slate-100 outline-none focus:border-brand-500/60" value={ws.provider} onChange={(e) => setWs((w) => ({ ...w, provider: e.target.value }))}>
+                <option value="simulate">Simulado (demo)</option>
+                <option value="twilio">Twilio · WhatsApp Business</option>
+                <option value="meta">Meta · WhatsApp Cloud API</option>
+              </select>
+            </Field>
+            <Field label="Funnel destino (distribuidor)">
+              <Input value={ws.distributorSlug} onChange={(e) => setWs((w) => ({ ...w, distributorSlug: e.target.value }))} placeholder="maria-gonzalez" />
+            </Field>
+            <Field label="Webhook secret / App secret (Meta)" hint="Twilio: cabecera X-Webhook-Secret. Meta: app secret para verificar X-Hub-Signature-256.">
+              <Input value={ws.webhookSecret} onChange={(e) => setWs((w) => ({ ...w, webhookSecret: e.target.value }))} placeholder="dejar vacío para permitir sin firma (no recomendado)" />
+            </Field>
+            {ws.provider === "meta" && (
+              <>
+                <Field label="Verify token (Meta)">
+                  <Input value={ws.metaVerifyToken} onChange={(e) => setWs((w) => ({ ...w, metaVerifyToken: e.target.value }))} placeholder="token de verificación del webhook" />
+                </Field>
+                <Field label="Token de acceso (Meta)">
+                  <Input value={ws.metaToken} onChange={(e) => setWs((w) => ({ ...w, metaToken: e.target.value }))} placeholder="EAAG…" />
+                </Field>
+                <Field label="Phone Number ID (Meta)">
+                  <Input value={ws.metaPhoneNumberId} onChange={(e) => setWs((w) => ({ ...w, metaPhoneNumberId: e.target.value }))} placeholder="1234567890" />
+                </Field>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={saveWs} loading={savingWs}>Guardar canal</Button>
+            {wsSaved && <span className="text-xs text-emerald-300">✓ Canal guardado</span>}
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wide text-slate-400">Webhooks de salida</h2>
       </div>
 
       {loading ? (
