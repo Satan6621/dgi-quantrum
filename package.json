@@ -4,6 +4,7 @@
   "private": true,
   "description": "DGI Quantrum - Infraestructura de crecimiento B2B basada en IA para organizaciones con redes de distribuidores",
   "scripts": {
+    "start": "cd apps/api && npx tsx src/index.ts",
     "setup:db": "cd apps/api && npm run prisma:generate && npm run db:push && npm run db:seed",
     "dev:api": "cd apps/api && npm run dev",
     "dev:web": "cd apps/web && npm run dev",
