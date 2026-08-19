@@ -132,7 +132,7 @@ export async function createCheckout(org: any, planId: string) {
     const form = new URLSearchParams({
       mode: "subscription",
       "line_items[0][price_data][currency]": "usd",
-      "line_items[0][price_data][product_data][name]": `NETWORK AI OS · ${plan.name}`,
+      "line_items[0][price_data][product_data][name]": `DGI Quantrum · ${plan.name}`,
       "line_items[0][price_data][unit_amount]": String(plan.price * 100),
       "line_items[0][price_data][recurring][interval]": "month",
       "line_items[0][quantity]": "1",

@@ -55,22 +55,22 @@ export default function LoginPage() {
       {/* Panel izquierdo de marca */}
       <div className="relative hidden w-[46%] overflow-hidden border-r border-white/5 bg-gradient-to-br from-ink-900 via-ink-800 to-brand-900/40 lg:block">
         <div className="absolute inset-0 bg-grid opacity-60" />
-        <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-brand-600/25 blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-glow-500/20 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-96 w-96 animate-gradient-shift rounded-full bg-brand-600/25 blur-3xl" style={{ backgroundSize: "200% 200%" }} />
+        <div className="absolute -bottom-24 -right-24 h-96 w-96 animate-gradient-shift rounded-full bg-glow-500/20 blur-3xl" style={{ backgroundSize: "200% 200%", animationDelay: "4s" }} />
 
         <div className="relative flex h-full flex-col justify-between p-12">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-glow-500 shadow-xl shadow-brand-600/40">
-              <BrainCircuit className="h-6 w-6 text-white" />
+          <div className="flex items-center gap-3 animate-fade-in">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-glow-500 shadow-xl shadow-brand-600/40">
+              <BrainCircuit className="h-7 w-7 text-white" />
             </div>
             <div>
-              <p className="text-lg font-extrabold tracking-tight text-white">NETWORK AI OS</p>
-              <p className="text-[11px] uppercase tracking-widest text-slate-400">Crecimiento impulsado por IA</p>
+              <p className="text-xl font-extrabold tracking-tight text-white">DGI Quantrum</p>
+              <p className="text-[11px] uppercase tracking-widest text-brand-300">Crecimiento impulsado por IA</p>
             </div>
           </div>
 
           <div className="space-y-8">
-            <div>
+            <div className="animate-slide-up">
               <h1 className="text-4xl font-extrabold leading-tight text-white">
                 Un cerebro. <br />
                 <span className="text-gradient">Mil distribuidores.</span> <br />
@@ -87,8 +87,8 @@ export default function LoginPage() {
                 { icon: Network, title: "Multi-tenant", text: "Aislamiento total por organización" },
                 { icon: Sparkles, title: "AI Twin por distribuidor", text: "Un funnel IA personalizado por cada agente" },
                 { icon: ShieldCheck, title: "Compliance integrado", text: "Claims prohibidos y políticas en cada conversación" },
-              ].map((f) => (
-                <div key={f.title} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur">
+              ].map((f, i) => (
+                <div key={f.title} className="animate-slide-up flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur" style={{ animationDelay: `${0.15 + i * 0.1}s` }}>
                   <f.icon className="h-5 w-5 shrink-0 text-glow-400" />
                   <div>
                     <p className="text-sm font-semibold text-white">{f.title}</p>
@@ -108,7 +108,7 @@ export default function LoginPage() {
 
       {/* Panel derecho: formulario */}
       <div className="flex flex-1 items-center justify-center p-6">
-        <div className="w-full max-w-md animate-fade-up">
+        <div className="w-full max-w-md animate-fade-in">
           <div className="mb-8 text-center lg:text-left">
             <h2 className="text-2xl font-extrabold text-white">{mode === "login" ? "Bienvenido de nuevo" : "Crear organización"}</h2>
             <p className="mt-1 text-sm text-slate-400">

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Users, MessageSquare, Flame, TrendingUp, BellRing, Rocket, Target, ArrowUpRight } from "lucide-react";
 import { api, q } from "../lib/api";
-import { Card, Stat, StatusPill, EmptyState, Spinner, Avatar, Badge, cn } from "../components/ui";
+import { Card, Stat, StatusPill, EmptyState, Avatar, Badge, cn } from "../components/ui";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { timeAgo, scoreChip, srcLabel } from "../lib/format";
 
 export default function DashboardPage() {
@@ -22,7 +23,7 @@ export default function DashboardPage() {
   }, []);
 
   if (loading || !ov) {
-    return <div className="flex justify-center py-24"><Spinner className="h-8 w-8 text-brand-400" /></div>;
+    return <LoadingSpinner size="lg" label="Cargando panel..." className="py-24" />;
   }
 
   const total = ov.total || 0;

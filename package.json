@@ -1,8 +1,8 @@
 {
-  "name": "network-ai-os",
+  "name": "dgi-quantrum",
   "version": "1.0.0",
   "private": true,
-  "description": "NETWORK AI OS - Infraestructura de crecimiento B2B basada en IA para organizaciones con redes de distribuidores",
+  "description": "DGI Quantrum - Infraestructura de crecimiento B2B basada en IA para organizaciones con redes de distribuidores",
   "scripts": {
     "setup:db": "cd apps/api && npm run prisma:generate && npm run db:push && npm run db:seed",
     "dev:api": "cd apps/api && npm run dev",

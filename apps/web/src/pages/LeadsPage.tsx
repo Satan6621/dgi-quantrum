@@ -1,7 +1,8 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { Users, Search, Filter, MessageSquare, Phone, Calendar, CheckCircle2, Rocket, ArrowUpRight, BellRing, Upload, FileText } from "lucide-react";
 import { api, q } from "../lib/api";
-import { Card, Input, Select, Button, Badge, StatusPill, Avatar, EmptyState, Spinner, Modal, cn, Tabs, Pager } from "../components/ui";
+import { Card, Input, Select, Button, Badge, StatusPill, Avatar, EmptyState, Modal, cn, Tabs, Pager } from "../components/ui";
+import LoadingSpinner from "../components/LoadingSpinner";
 import { timeAgo, dateTime, scoreChip, srcLabel, OUTCOME_LABEL, initials } from "../lib/format";
 
 const STATUSES = ["NEW", "IN_CONVERSATION", "NUTRITION", "HANDOFF", "ONBOARDING", "DISTRIBUTOR", "DISQUALIFIED"];
@@ -105,7 +106,7 @@ export default function LeadsPage() {
 
       <Card className="p-0">
         {loading ? (
-          <div className="flex justify-center py-20"><Spinner className="h-7 w-7 text-brand-400" /></div>
+          <LoadingSpinner size="md" label="Cargando leads..." className="py-20" />
         ) : leads.length === 0 ? (
           <EmptyState icon={<Filter className="h-8 w-8" />} title="No hay leads con esos filtros" text="Ajusta los filtros o comparte tu funnel para atraer prospectos." />
         ) : (

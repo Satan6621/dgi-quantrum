@@ -16,7 +16,7 @@ export const env = {
   SMTP_PORT: Number(process.env.SMTP_PORT || 587),
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
-  SMTP_FROM: process.env.SMTP_FROM || "no-reply@network-ai-os.local",
+  SMTP_FROM: process.env.SMTP_FROM || "no-reply@dgi-quantrum.local",
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "",
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || "",
   STRIPE_CURRENCY: process.env.STRIPE_CURRENCY || "usd",

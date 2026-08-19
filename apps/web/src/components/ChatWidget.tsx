@@ -133,14 +133,14 @@ export default function ChatWidget({ slug, profile, variantId }: { slug: string;
             {msgs.length === 0 && !typing && (
               <p className="text-center text-xs text-slate-500">Escribe para comenzar la conversación…</p>
             )}
-            {msgs.map((m) => (
-              <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+            {msgs.map((m, idx) => (
+              <div key={m.id} className={cn("flex animate-slide-up", m.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
                     "max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed",
                     m.role === "user"
-                      ? "rounded-br-sm bg-gradient-to-r from-brand-600 to-brand-500 text-white"
-                      : "rounded-bl-sm border border-white/10 bg-ink-800 text-slate-200"
+                      ? "rounded-br-sm bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-lg shadow-brand-600/20"
+                      : "rounded-bl-sm border border-white/10 bg-ink-800 text-slate-200 shadow-lg shadow-black/20"
                   )}
                 >
                   {m.content}
@@ -148,22 +148,26 @@ export default function ChatWidget({ slug, profile, variantId }: { slug: string;
               </div>
             ))}
             {typing && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-1 rounded-2xl rounded-bl-sm border border-white/10 bg-ink-800 px-4 py-3">
+              <div className="flex animate-slide-up justify-start">
+                <div className="flex items-center gap-1.5 rounded-2xl rounded-bl-sm border border-white/10 bg-ink-800 px-4 py-3 shadow-lg shadow-black/20">
                   {[0, 1, 2].map((i) => (
-                    <span key={i} className="h-1.5 w-1.5 animate-blink rounded-full bg-slate-400" style={{ animationDelay: `${i * 0.2}s` }} />
+                    <span
+                      key={i}
+                      className="h-2 w-2 rounded-full bg-brand-400"
+                      style={{ animation: `typing-dot 1.4s infinite`, animationDelay: `${i * 0.2}s` }}
+                    />
                   ))}
                 </div>
               </div>
             )}
 
             {done && (
-              <div className="animate-pop space-y-2 border border-white/10 bg-white/5 p-3.5">
+              <div className="animate-pop space-y-2 rounded-2xl border border-white/10 bg-white/5 p-3.5 shadow-lg shadow-black/20">
                 {state.outcome === "HIGH" && (
                   <>
                     <p className="flex items-center gap-2 text-sm font-bold text-emerald-300"><PartyPopper className="h-4 w-4" /> ¡Excelente! Estás en el siguiente paso.</p>
                     {state.handoff?.calendarUrl && (
-                      <a href={state.handoff.calendarUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-glow-500 px-3 py-2 text-xs font-bold text-white">
+                      <a href={state.handoff.calendarUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-glow-500 px-3 py-2 text-xs font-bold text-white shadow-lg shadow-brand-600/30">
                         <Calendar className="h-4 w-4" /> Agendar 15 minutos
                       </a>
                     )}

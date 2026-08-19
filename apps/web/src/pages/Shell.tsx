@@ -146,7 +146,7 @@ export default function Shell() {
           <BrainCircuit className="h-5 w-5 text-white" />
         </div>
         <div>
-          <p className="text-sm font-extrabold tracking-tight text-white">NETWORK AI OS</p>
+          <p className="text-sm font-extrabold tracking-tight text-white">DGI Quantrum</p>
           <p className="text-[10px] font-medium uppercase tracking-widest text-slate-500">{org?.name || "Plataforma"}</p>
         </div>
       </div>

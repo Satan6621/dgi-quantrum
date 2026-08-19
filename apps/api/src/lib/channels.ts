@@ -6,7 +6,8 @@ const prisma = new PrismaClient();
 
 export interface ChannelSettings {
   whatsapp?: { provider?: string; distributorSlug?: string; webhookSecret?: string };
-  calcom?: { apiKey?: string; distributorSlug?: string };
+  calcom?: { apiKey?: string; distributorSlug?: string; webhookSecret?: string };
+  slackWebhookUrl?: string;
   [k: string]: unknown;
 }
 

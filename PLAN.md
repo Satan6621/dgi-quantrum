@@ -1,4 +1,4 @@
-# NETWORK AI OS — Plan de Producto y Arquitectura
+# DGI Quantrum — Plan de Producto y Arquitectura
 
 > Infraestructura de crecimiento basada en IA para empresas con redes de distribuidores.
 > Una empresa central configura **un cerebro**, y cada distribuidor recibe **un gemelo IA** que

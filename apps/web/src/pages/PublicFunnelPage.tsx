@@ -217,7 +217,10 @@ export default function PublicFunnelPage() {
       </section>
 
       <footer className="border-t border-indigo-100 py-6 text-center text-xs text-slate-400">
-        {profile?.org.name} · Powered by NETWORK AI OS 🧠
+        {profile?.org.name} · Powered by{" "}
+        <a href="https://dguiquantrum.com" target="_blank" rel="noreferrer" className="font-semibold text-indigo-600 transition hover:text-indigo-500">
+          DGI Quantrum
+        </a>
       </footer>
 
       <ChatWidget slug={slug!} profile={profile} variantId={variantId} />

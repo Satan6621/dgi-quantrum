@@ -1,6 +1,7 @@
 import { createHmac, randomBytes } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { safeParseJson } from "./helpers";
+import { sendSlackMessage, buildLeadNotification } from "./slack";
 
 const prisma = new PrismaClient();
 
@@ -33,10 +34,17 @@ export function outgoingWebhooksOf(org: any): OutgoingWebhook[] {
 /** Dispara un evento a todos los webhooks de salida configurados (fire-and-forget). */
 export async function fire(org: any, event: OutgoingEvent, payload: any) {
   const hooks = outgoingWebhooksOf(org);
-  if (hooks.length === 0) return;
   for (const hook of hooks) {
     if (!hook.events.includes(event)) continue;
     void deliverNow(org, hook, event, payload);
+  }
+
+  // Slack adapter: if org has slackWebhookUrl in channels config, also send there
+  const settings: any = safeParseJson(org.settings, {});
+  const slackUrl = settings.channels?.slackWebhookUrl;
+  if (slackUrl && (event === "lead.created" || event === "lead.handoff" || event === "lead.onboarding")) {
+    const message = buildLeadNotification(payload, event);
+    void sendSlackMessage(slackUrl, message);
   }
 }
 
@@ -46,7 +54,7 @@ export async function deliverNow(org: any, hook: OutgoingWebhook, event: Outgoin
   const deliveryId = `wh_${randomBytes(6).toString("hex")}`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "User-Agent": "network-ai-os/3",
+    "User-Agent": "dgi-quantrum/3",
     "X-NAIO-Event": event,
     "X-NAIO-Delivery": deliveryId,
   };

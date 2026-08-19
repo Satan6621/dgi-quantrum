@@ -1,4 +1,4 @@
-# NETWORK AI OS 🧠
+# DGI Quantrum 🧠
 
 Infraestructura de crecimiento **SaaS B2B** basada en IA para empresas con redes de distribuidores,
 representantes, afiliados o agentes. Una sola configuración central y **AI Twins** replicados
@@ -144,7 +144,7 @@ Al reiniciar la API verás `Motor de IA → openai-compatible`. Si falla, vuelve
 ## 📁 Estructura
 
 ```
-network-ai-os/
+dgi-quantrum/
 ├── apps/
 │   ├── api/                  # Backend Express + Prisma
 │   │   ├── prisma/           # schema + seed demo

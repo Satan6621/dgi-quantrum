@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { requireAuth, requireOrg } from "../lib/middleware";
 import { asyncHandler } from "../lib/helpers";
+import { getCached, setCache } from "../lib/cache";
 
 const r = Router();
 
@@ -187,13 +188,21 @@ async function weeklyCohorts(req: any): Promise<any> {
 r.get(
   "/overview",
   asyncHandler(async (req, res) => {
-    res.json(await overviewData(req));
+    const cacheKey = `overview:${req.user!.orgId}:${req.user!.sub}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+    const data = await overviewData(req);
+    setCache(cacheKey, data, 30000);
+    res.json(data);
   })
 );
 
 r.get(
   "/funnel",
   asyncHandler(async (req, res) => {
+    const cacheKey = `funnel:${req.user!.orgId}:${req.user!.sub}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
     const where = await leadWhere(req);
     const byStatus = await prisma.lead.groupBy({
       by: ["status"],
@@ -203,9 +212,11 @@ r.get(
     const map: Record<string, number> = {};
     for (const s of byStatus) map[s.status] = s._count._all;
     const order = ["NEW", "IN_CONVERSATION", "NUTRITION", "HANDOFF", "ONBOARDING", "DISTRIBUTOR", "DISQUALIFIED"];
-    res.json({
+    const data = {
       stages: order.map((k) => ({ status: k, count: map[k] ?? 0 })),
-    });
+    };
+    setCache(cacheKey, data, 30000);
+    res.json(data);
   })
 );
 
@@ -367,13 +378,18 @@ r.get(
 r.get(
   "/executive",
   asyncHandler(async (req, res) => {
+    const cacheKey = `executive:${req.user!.orgId}:${req.user!.sub}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
     const [overview, velocity, sources, cohorts] = await Promise.all([
       overviewData(req),
       velocityMetrics(req),
       sourceFunnel(req),
       weeklyCohorts(req),
     ]);
-    res.json({ overview, velocity, sources, cohorts });
+    const data = { overview, velocity, sources, cohorts };
+    setCache(cacheKey, data, 60000);
+    res.json(data);
   })
 );
 

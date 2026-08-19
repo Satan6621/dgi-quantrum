@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS = {
     "ACTIVADO",
   ],
   compensation: { direct: 15, level1: 5, level2: 2, base: 100 },
-  channels: { whatsapp: { provider: "simulate", distributorSlug: "", webhookSecret: "" }, calcom: { apiKey: "", distributorSlug: "" } },
+  channels: { whatsapp: { provider: "simulate", distributorSlug: "", webhookSecret: "" }, calcom: { apiKey: "", distributorSlug: "", webhookSecret: "" } },
 };
 
 /** Contenido genérico de arranque para una organización recién registrada. */

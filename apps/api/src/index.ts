@@ -27,7 +27,7 @@ async function processDueFollowUps() {
       if (fu.lead.email && (fu.channel === "email" || !fu.lead.phone)) {
         await sendEmail({
           to: fu.lead.email,
-          subject: `NETWORK AI OS · ${fu.title}`,
+          subject: `DGI Quantrum · ${fu.title}`,
           text: fu.content,
         });
       }
@@ -42,8 +42,8 @@ async function processDueFollowUps() {
   }
 }
 
-app.listen(env.PORT, () => {
-  console.log(`\n  NETWORK AI OS API  →  http://localhost:${env.PORT}`);
+const server = app.listen(env.PORT, () => {
+  console.log(`\n  DGI Quantrum API  →  http://localhost:${env.PORT}`);
   console.log(`  Motor de IA        →  ${env.OPENAI_API_KEY ? "openai-compatible" : "reglas + RAG (fallback)"}`);
   console.log(`  Docs OpenAPI       →  http://localhost:${env.PORT}/api/docs\n`);
   setInterval(() => {
@@ -52,3 +52,20 @@ app.listen(env.PORT, () => {
     void checkExpiredPlans();
   }, 60_000);
 });
+
+async function gracefulShutdown(signal: string) {
+  console.log(`\n[shutdown] Received ${signal}. Starting graceful shutdown...`);
+  server.close(async () => {
+    console.log("[shutdown] HTTP server closed.");
+    await prisma.$disconnect();
+    console.log("[shutdown] Prisma disconnected.");
+    process.exit(0);
+  });
+  setTimeout(() => {
+    console.error("[shutdown] Forced exit after timeout.");
+    process.exit(1);
+  }, 10_000);
+}
+
+process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => void gracefulShutdown("SIGINT"));

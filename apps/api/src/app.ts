@@ -3,7 +3,9 @@ import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import swaggerUi from "swagger-ui-express";
+import crypto from "crypto";
 import { env } from "./env";
+import { prisma } from "./lib/prisma";
 
 import authRoutes from "./routes/auth.routes";
 import publicRoutes from "./routes/public.routes";
@@ -22,6 +24,8 @@ import notificationsRoutes from "./routes/notifications.routes";
 import v1Routes from "./routes/v1.routes";
 import teamRoutes from "./routes/team.routes";
 import auditRoutes from "./routes/audit.routes";
+import pushRoutes from "./routes/push.routes";
+import integrationsRoutes from "./routes/integrations.routes";
 import { openapi } from "./lib/openapi";
 
 export const app = express();
@@ -34,6 +38,28 @@ const captureRaw = (_req: express.Request, _res: express.Response, buf: Buffer) 
 };
 app.use(express.json({ limit: "1mb", verify: captureRaw }));
 app.use(express.urlencoded({ extended: false, verify: captureRaw }));
+
+// Request ID middleware for tracing
+app.use((req, res, next) => {
+  const requestId = crypto.randomUUID();
+  (req as any).requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
+  next();
+});
+
+// Response time header
+app.use((_req, res, next) => {
+  const start = Date.now();
+  const originalJson = res.json.bind(res);
+  (res as any).json = function (body: any) {
+    const duration = Date.now() - start;
+    if (!res.headersSent) {
+      res.setHeader("X-Response-Time", `${duration}ms`);
+    }
+    return originalJson(body);
+  };
+  next();
+});
 
 // Rate-limit global por IP (defensa básica contra abuso)
 app.use(
@@ -59,7 +85,25 @@ app.use(
   })
 );
 
-app.get("/api/health", (_req, res) => res.json({ ok: true, engine: "rule" as string, v: "3" }));
+app.get("/api/health", async (_req, res) => {
+  const checks = {
+    ok: true,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    memory: {
+      rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + "MB",
+      heap: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + "MB",
+    },
+    db: "ok" as string,
+  };
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    checks.db = "error";
+    checks.ok = false;
+  }
+  res.status(checks.ok ? 200 : 503).json(checks);
+});
 
 // Docs OpenAPI
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi));
@@ -81,6 +125,8 @@ app.use("/api/export", exportRoutes);
 app.use("/api/notifications", notificationsRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/push", pushRoutes);
+app.use("/api/integrations", integrationsRoutes);
 app.use("/api/v1", v1Routes);
 
 app.use("/api/v1/openapi.json", (_req, res) => res.json(openapi));

@@ -1,11 +1,11 @@
-/** Especificación OpenAPI 3.0 del API de NETWORK AI OS. */
+/** Especificación OpenAPI 3.0 del API de DGI Quantrum. */
 export const openapi: Record<string, unknown> = {
   openapi: "3.0.0",
   info: {
-    title: "NETWORK AI OS API",
+    title: "DGI Quantrum API",
     version: "3.0.0",
     description:
-      "API pública y de integración de NETWORK AI OS: funnels con IA, leads, analítica y cerebro de conocimiento. Autenticación con API keys (header `X-API-Key`).",
+      "API pública y de integración de DGI Quantrum: funnels con IA, leads, analítica y cerebro de conocimiento. Autenticación con API keys (header `X-API-Key`).",
   },
   servers: [{ url: "/" }],
   tags: [

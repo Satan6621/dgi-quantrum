@@ -242,7 +242,7 @@ const DEMO_LEADS = [
 ];
 
 async function main() {
-  console.log("Seeding NETWORK AI OS demo...");
+  console.log("Seeding DGI Quantrum demo...");
 
   const existing = await prisma.organization.findUnique({ where: { slug: "vida-nova" } });
   if (existing) {

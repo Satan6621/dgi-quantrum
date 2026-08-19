@@ -5,6 +5,7 @@ import { asyncHandler, safeParseJson } from "../lib/helpers";
 import { inboundMessage } from "../lib/inbound";
 import { channelCfg } from "../lib/channels";
 import { verifyTwilioSignature, verifyMetaSignature, parseTwilioPayload, parseMetaPayload, WsMessage } from "../lib/whatsapp";
+import { verifyCalSignature, parseCalPayload } from "../lib/calcom";
 import { env } from "../env";
 import { notify } from "../lib/notify";
 import { fire } from "../lib/outgoing";
@@ -98,51 +99,80 @@ r.post(
 
 /**
  * Cal.com (BOOKING_CREATED): crea la cita y empuja el lead a ONBOARDING.
+ * Si el canal configura `webhookSecret`, exige la firma X-Cal-Signature-256.
  */
 r.post(
   "/:orgSlug/calcom",
   asyncHandler(async (req, res) => {
     const org = await loadOrg(req.params.orgSlug);
     if (!org) return res.status(404).json({ error: "Organización no encontrada" });
-    const body = req.body || {};
-    const payload = body.payload || body;
-    const invitee = payload.responses?.email?.value || payload.attendees?.[0]?.email || body.inviteeEmail;
-    if (!invitee) return res.status(400).json({ error: "Falta el email del invitado" });
-
-    const lead = await prisma.lead.findFirst({ where: { orgId: org.id, email: invitee } });
-    if (lead) {
-      const orgSettings = safeParseJson<any>(org.settings, {});
-      const checklist: string[] = orgSettings.onboardingChecklist ?? [];
-      await prisma.onboardingTask.deleteMany({ where: { leadId: lead.id } });
-      for (const [i, t] of checklist.entries()) {
-        await prisma.onboardingTask.create({ data: { orgId: org.id, leadId: lead.id, title: t, order: i } });
+    const cfg = channelCfg(org, "calcom");
+    const rawBody = (req as any).rawBody || Buffer.from(JSON.stringify(req.body || {}));
+    if (cfg.webhookSecret) {
+      const sig = String(req.headers["x-cal-signature-256"] || "");
+      if (!verifyCalSignature(cfg.webhookSecret, rawBody, sig)) {
+        return res.status(401).json({ error: "Firma de Cal.com inválida" });
       }
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: { status: "ONBOARDING", outcome: "AGENDADA", intentLevel: "HIGH", lastActivity: new Date() },
-      });
-      const twin = lead.distributorId
-        ? await prisma.distributor.findUnique({ where: { id: lead.distributorId } })
-        : null;
-      await notify(org.id, {
-        distributorId: twin?.id ?? null,
-        type: "booking",
-        title: "Cita agendada 📅",
-        body: `${lead.name ?? invitee} agendó una llamada por Cal.com.`,
-        link: "/app/leads",
-      });
-      await fire(org, "lead.onboarding", {
-        leadId: lead.id,
-        name: lead.name ?? invitee,
-        email: invitee,
-        distributorId: twin?.id ?? null,
-        source: "calcom",
+    }
+    const booking = parseCalPayload(req.body);
+    if (!booking?.inviteeEmail) return res.status(400).json({ error: "Falta el email del invitado" });
+    const email = booking.inviteeEmail.toLowerCase();
+    const orgSettings = safeParseJson<any>(org.settings, {});
+    const checklist: string[] = orgSettings.onboardingChecklist ?? [];
+
+    let lead = await prisma.lead.findFirst({ where: { orgId: org.id, email } });
+    let twin = lead?.distributorId
+      ? await prisma.distributor.findUnique({ where: { id: lead.distributorId } })
+      : null;
+    if (!twin && cfg.distributorSlug) {
+      twin = await prisma.distributor.findFirst({ where: { orgId: org.id, slug: cfg.distributorSlug, status: "ACTIVE" } });
+    }
+    if (!twin && !lead) {
+      twin = await prisma.distributor.findFirst({ where: { orgId: org.id }, orderBy: { createdAt: "asc" } });
+    }
+
+    if (!lead) {
+      lead = await prisma.lead.create({
+        data: {
+          orgId: org.id,
+          distributorId: twin?.id ?? null,
+          email,
+          name: booking.inviteeName ?? null,
+          source: "calcom",
+          status: "ONBOARDING",
+          outcome: "AGENDADA",
+          intentLevel: "HIGH",
+        },
       });
     }
-    await prisma.webhookLog.create({
-      data: { orgId: org.id, provider: "calcom", payload: JSON.stringify(body).slice(0, 4000), status: "processed" },
+
+    await prisma.onboardingTask.deleteMany({ where: { leadId: lead.id } });
+    for (const [i, t] of checklist.entries()) {
+      await prisma.onboardingTask.create({ data: { orgId: org.id, leadId: lead.id, title: t, order: i } });
+    }
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: { status: "ONBOARDING", outcome: "AGENDADA", intentLevel: "HIGH", lastActivity: new Date() },
     });
-    res.json({ ok: true });
+    await notify(org.id, {
+      distributorId: twin?.id ?? null,
+      type: "booking",
+      title: "Cita agendada 📅",
+      body: `${lead.name ?? email} agendó una llamada${booking.start ? ` para ${new Date(booking.start).toLocaleString()}` : ""} por Cal.com.`,
+      link: "/app/leads",
+    });
+    await fire(org, "lead.onboarding", {
+      leadId: lead.id,
+      name: lead.name ?? email,
+      email,
+      distributorId: twin?.id ?? null,
+      source: "calcom",
+      bookingUrl: booking.url ?? null,
+    });
+    await prisma.webhookLog.create({
+      data: { orgId: org.id, provider: "calcom", payload: JSON.stringify({ ...booking, leadId: lead.id }).slice(0, 4000), status: "processed" },
+    });
+    res.json({ ok: true, leadId: lead.id });
   })
 );
 

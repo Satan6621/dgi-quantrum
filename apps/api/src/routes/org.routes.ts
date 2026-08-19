@@ -172,7 +172,7 @@ r.post(
     if (!org) return res.status(404).json({ error: "Organización no encontrada" });
     const hook = outgoingWebhooksOf(org).find((h) => h.id === id);
     if (!hook) return res.status(404).json({ error: "Webhook no encontrado o desactivado" });
-    const result = await deliverNow(org, hook, "lead.created", { test: true, message: "Evento de prueba de NETWORK AI OS" });
+    const result = await deliverNow(org, hook, "lead.created", { test: true, message: "Evento de prueba de DGI Quantrum" });
     audit({ orgId: org.id, userId: req.user!.sub, action: "webhook.test", entity: "webhook", entityId: hook.id, meta: { url: hook.url, ok: result.status === "ok" } });
     res.json({ ok: result.status === "ok", detail: result });
   })

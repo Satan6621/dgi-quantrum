@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Webhook, Plus, Pencil, Trash2, Zap, Eye, ChevronDown, RefreshCw, MessageCircle } from "lucide-react";
+import { Webhook, Plus, Pencil, Trash2, Zap, Eye, ChevronDown, RefreshCw, MessageCircle, Calendar } from "lucide-react";
 import { api } from "../../lib/api";
 import { Card, Input, Button, Badge, EmptyState, Spinner, Modal, Field, cn } from "../../components/ui";
 import { timeAgo } from "../../lib/format";
@@ -20,6 +20,12 @@ interface WsCfg {
   metaVerifyToken: string;
   metaToken: string;
   metaPhoneNumberId: string;
+}
+
+interface CalCfg {
+  apiKey: string;
+  distributorSlug: string;
+  webhookSecret: string;
 }
 
 const EVENT_LABEL: Record<string, string> = {
@@ -45,6 +51,9 @@ export default function AdminWebhooksPage() {
   const [orgSettings, setOrgSettings] = useState<any>({});
   const [savingWs, setSavingWs] = useState(false);
   const [wsSaved, setWsSaved] = useState(false);
+  const [cal, setCal] = useState<CalCfg>({ apiKey: "", distributorSlug: "", webhookSecret: "" });
+  const [savingCal, setSavingCal] = useState(false);
+  const [calSaved, setCalSaved] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -58,6 +67,8 @@ export default function AdminWebhooksPage() {
       setOrgSettings(o.org.settings || {});
       const ch = o.org.settings?.channels?.whatsapp || {};
       setWs({ provider: ch.provider || "simulate", distributorSlug: ch.distributorSlug || "", webhookSecret: ch.webhookSecret || "", metaVerifyToken: ch.metaVerifyToken || "", metaToken: ch.metaToken || "", metaPhoneNumberId: ch.metaPhoneNumberId || "" });
+      const cc = o.org.settings?.channels?.calcom || {};
+      setCal({ apiKey: cc.apiKey || "", distributorSlug: cc.distributorSlug || "", webhookSecret: cc.webhookSecret || "" });
     } finally {
       setLoading(false);
     }
@@ -73,6 +84,19 @@ export default function AdminWebhooksPage() {
       setWsSaved(true);
     } finally {
       setSavingWs(false);
+    }
+  }
+
+  async function saveCal() {
+    setSavingCal(true);
+    setCalSaved(false);
+    try {
+      const next = { ...orgSettings, channels: { ...(orgSettings.channels || {}), calcom: { ...cal } } };
+      await api("/api/org", { method: "PUT", body: JSON.stringify({ settings: next }) });
+      setOrgSettings(next);
+      setCalSaved(true);
+    } finally {
+      setSavingCal(false);
     }
   }
 
@@ -171,6 +195,30 @@ export default function AdminWebhooksPage() {
           <div className="flex items-center gap-3">
             <Button onClick={saveWs} loading={savingWs}>Guardar canal</Button>
             {wsSaved && <span className="text-xs text-emerald-300">✓ Canal guardado</span>}
+          </div>
+        </div>
+      </Card>
+
+      <Card title="Canal de entrada · Cal.com" subtitle="Una cita agendada empuja el lead a ONBOARDING automáticamente.">
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/10 bg-ink-800/60 px-3 py-2 text-xs text-slate-400">
+            <Calendar className="h-4 w-4 text-brand-300" />
+            <span>Webhook: <code className="text-slate-200">POST {`/api/webhooks/{orgSlug}/calcom`}</code> (evento BOOKING_CREATED)</span>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            <Field label="Funnel destino (distribuidor)">
+              <Input value={cal.distributorSlug} onChange={(e) => setCal((c) => ({ ...c, distributorSlug: e.target.value }))} placeholder="maria-gonzalez" />
+            </Field>
+            <Field label="Webhook secret" hint="Firma X-Cal-Signature-256. Vacío = se acepta sin firma (no recomendado).">
+              <Input value={cal.webhookSecret} onChange={(e) => setCal((c) => ({ ...c, webhookSecret: e.target.value }))} placeholder="secret del webhook de Cal.com" />
+            </Field>
+            <Field label="API key (reservado)" hint="Para crear citas desde la plataforma en el futuro.">
+              <Input value={cal.apiKey} onChange={(e) => setCal((c) => ({ ...c, apiKey: e.target.value }))} placeholder="cal_…" />
+            </Field>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button onClick={saveCal} loading={savingCal}>Guardar canal</Button>
+            {calSaved && <span className="text-xs text-emerald-300">✓ Canal guardado</span>}
           </div>
         </div>
       </Card>

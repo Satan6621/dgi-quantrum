@@ -10,6 +10,8 @@ import { fire } from "../lib/outgoing";
 import { sendEmail } from "../lib/email";
 import { parseCsv, normalizeEmail, normalizePhone } from "../lib/csv";
 import { audit } from "../lib/audit";
+import { generateICS } from "../lib/calendar";
+import { invalidateCache } from "../lib/cache";
 
 const r = Router();
 
@@ -42,10 +44,10 @@ r.get(
       prisma.lead.findMany({
         where,
         include: {
-          distributor: { select: { name: true, slug: true } },
-          _count: { select: { sessions: true } },
-          tasks: { orderBy: { order: "asc" } },
-          followUps: { orderBy: { dueAt: "asc" } },
+          distributor: { select: { id: true, name: true, slug: true } },
+          _count: { select: { sessions: true, tasks: true, followUps: true } },
+          tasks: { select: { id: true, title: true, completed: true, order: true }, orderBy: { order: "asc" } },
+          followUps: { select: { id: true, title: true, status: true, dueAt: true }, orderBy: { dueAt: "asc" } },
         },
         orderBy: { lastActivity: "desc" },
         skip: pg.skip,
@@ -122,6 +124,11 @@ r.post(
     }
 
     if (created.length > 0) {
+      invalidateCache(`overview:${orgId}`);
+      invalidateCache(`funnel:${orgId}`);
+      invalidateCache(`executive:${orgId}`);
+      invalidateCache(`sources:${orgId}`);
+      invalidateCache(`cohorts:${orgId}`);
       await fire(org, "lead.created", { created: created.length, source: defaultSource });
     }
     audit({ orgId: org.id, userId: req.user!.sub, action: "leads.import", entity: "lead", meta: { created: created.length, skipped: skipped.length, errors: errors.length, source: defaultSource } });
@@ -200,6 +207,11 @@ r.patch(
     if (intentLevel) data.intentLevel = String(intentLevel);
     if (outcome) data.outcome = String(outcome);
     const updated = await prisma.lead.update({ where: { id: existing.id }, data });
+    invalidateCache(`overview:${orgId}`);
+    invalidateCache(`funnel:${orgId}`);
+    invalidateCache(`executive:${orgId}`);
+    invalidateCache(`sources:${orgId}`);
+    invalidateCache(`cohorts:${orgId}`);
     res.json({ lead: leadView(updated) });
   })
 );
@@ -231,6 +243,11 @@ r.post(
       where: { id: lead.id },
       data: { status: "ONBOARDING", outcome: "ALTA_INTENCION", intentLevel: "HIGH", lastActivity: new Date() },
     });
+    invalidateCache(`overview:${orgId}`);
+    invalidateCache(`funnel:${orgId}`);
+    invalidateCache(`executive:${orgId}`);
+    invalidateCache(`sources:${orgId}`);
+    invalidateCache(`cohorts:${orgId}`);
     const orgForEvt = await prisma.organization.findUnique({ where: { id: orgId } });
     if (orgForEvt) {
       await fire(orgForEvt, "lead.handoff", { leadId: lead.id, name: lead.name, email: lead.email });
@@ -318,6 +335,11 @@ r.post(
     });
 
     audit({ orgId, userId: req.user!.sub, action: "lead.activate", entity: "lead", entityId: lead.id, meta: { distributor: finalName, slug, email: finalEmail } });
+    invalidateCache(`overview:${orgId}`);
+    invalidateCache(`funnel:${orgId}`);
+    invalidateCache(`executive:${orgId}`);
+    invalidateCache(`sources:${orgId}`);
+    invalidateCache(`cohorts:${orgId}`);
 
     const org = await prisma.organization.findUnique({ where: { id: orgId } });
     if (org) {
@@ -361,5 +383,35 @@ r.post(
       },
     });
   }));
+
+/** Generar archivo .ics para reunión de handoff */
+r.get(
+  "/:id/calendar",
+  asyncHandler(async (req, res) => {
+    const orgId = req.user!.orgId!;
+    const lead = await prisma.lead.findFirst({
+      where: { id: req.params.id, orgId },
+      include: { distributor: { select: { name: true, calendarUrl: true } } },
+    });
+    if (!lead) return res.status(404).json({ error: "Lead no encontrado" });
+
+    const now = new Date();
+    const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    startTime.setHours(10, 0, 0, 0);
+    const endTime = new Date(startTime.getTime() + 30 * 60 * 1000);
+
+    const icsContent = generateICS({
+      title: `Handoff: ${lead.name || "Prospecto"}`,
+      description: `Reunión de handoff con ${lead.name || "prospecto"}.\nFuente: ${lead.source}\nEstado: ${lead.status}\nDistribuidor: ${lead.distributor?.name || "N/A"}`,
+      startTime,
+      endTime,
+      url: lead.distributor?.calendarUrl ?? undefined,
+    });
+
+    res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="handoff-${lead.id}.ics"`);
+    res.send(icsContent);
+  })
+);
 
 export default r;

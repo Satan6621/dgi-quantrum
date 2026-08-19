@@ -91,9 +91,28 @@ r.get(
     if (!def) return res.status(400).json({ error: `Tipo inválido. Disponibles: ${Object.keys(DEFS).join(", ")}` });
     const format = String(req.query.format || "csv").toLowerCase();
     if (!["csv", "json"].includes(format)) return res.status(400).json({ error: "Formato inválido (csv|json)" });
-    const rows = await def.fetch(req.user!.orgId!);
+
+    const orgId = req.user!.orgId!;
+    let fetchFn = def.fetch;
+
+    if (type === "leads") {
+      const { from, to, status, source } = req.query;
+      fetchFn = async (orgId: string) => {
+        const where: any = { orgId };
+        if (from || to) {
+          where.createdAt = {};
+          if (from) where.createdAt.gte = new Date(String(from));
+          if (to) where.createdAt.lte = new Date(String(to) + "T23:59:59.999Z");
+        }
+        if (status) where.status = String(status);
+        if (source) where.source = String(source);
+        return prisma.lead.findMany({ where, include: { distributor: { select: { name: true } } } });
+      };
+    }
+
+    const rows = await fetchFn(orgId);
     const data = { headers: def.headers, rows: rows.map(def.flatten) };
-    const out = renderExport(data, format, `network-ai-os-${type}-${new Date().toISOString().slice(0, 10)}`);
+    const out = renderExport(data, format, `dgi-quantrum-${type}-${new Date().toISOString().slice(0, 10)}`);
     audit({ orgId: req.user!.orgId, userId: req.user!.sub, action: "export.run", entity: type, meta: { format, rows: rows.length } });
     res.setHeader("Content-Type", out.contentType);
     res.setHeader("Content-Disposition", out.disposition);
