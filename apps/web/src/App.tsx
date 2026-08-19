@@ -12,6 +12,8 @@ import OnboardingPage from "./pages/OnboardingPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import DownlinePage from "./pages/DownlinePage";
 import SimulatorPage from "./pages/SimulatorPage";
+import CoursesPage from "./pages/CoursesPage";
+import CampaignsPage from "./pages/CampaignsPage";
 import AdminOverviewPage from "./pages/admin/AdminOverviewPage";
 import AdminBrainPage from "./pages/admin/AdminBrainPage";
 import AdminSequencesPage from "./pages/admin/AdminSequencesPage";
@@ -67,6 +69,8 @@ export default function App() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="downline" element={<DownlinePage />} />
         <Route path="simulator" element={<SimulatorPage />} />
+        <Route path="courses" element={<CoursesPage />} />
+        <Route path="campaigns" element={<CampaignsPage />} />
         <Route
           path="admin"
           element={

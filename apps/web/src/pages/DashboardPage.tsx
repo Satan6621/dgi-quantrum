@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Users, MessageSquare, Flame, TrendingUp, BellRing, Rocket, Target, ArrowUpRight } from "lucide-react";
+import { Users, MessageSquare, Flame, TrendingUp, BellRing, Rocket, Target, ArrowUpRight, Sparkles, BookOpen, Megaphone, Send, Zap } from "lucide-react";
 import { api, q } from "../lib/api";
 import { Card, Stat, StatusPill, EmptyState, Avatar, Badge, cn } from "../components/ui";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -41,6 +41,32 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Banner with Animations */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-brand-600/30 via-glow-600/20 to-rose-600/10 p-6">
+        <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-brand-500/20 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-16 -right-16 h-48 w-48 rounded-full bg-glow-500/20 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-extrabold text-white animate-fade-up">Bienvenido a DGI Quantrum</h1>
+            <p className="mt-1 text-sm text-slate-300 animate-fade-up stagger-1">Tu plataforma de crecimiento con IA. Captación, cualificación y cierre automatizado.</p>
+            <div className="mt-4 flex gap-3 animate-fade-up stagger-2">
+              <Link to="/app/courses" className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20">
+                <BookOpen className="h-4 w-4" /> Ver Cursos
+              </Link>
+              <Link to="/app/campaigns" className="flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/20">
+                <Megaphone className="h-4 w-4" /> Crear Campaña
+              </Link>
+              <a href="https://telegram.org/dl" target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl bg-sky-500/20 px-4 py-2 text-xs font-semibold text-sky-300 transition hover:bg-sky-500/30">
+                <Send className="h-4 w-4" /> Telegram
+              </a>
+            </div>
+          </div>
+          <div className="hidden lg:flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 to-glow-500 shadow-2xl shadow-brand-600/40 animate-bounce-slow">
+            <Sparkles className="h-10 w-10 text-white" />
+          </div>
+        </div>
+      </div>
+
       <div>
         <h1 className="text-2xl font-extrabold text-white">Panel de crecimiento</h1>
         <p className="text-sm text-slate-400">Ciclo completo: tráfico → prospectos informados → alta intención → activación.</p>

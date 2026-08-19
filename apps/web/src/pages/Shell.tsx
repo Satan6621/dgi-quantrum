@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { BrainCircuit, LayoutDashboard, MessageSquare, Users, BellRing, Rocket, BarChart3, Settings2, Database, ListOrdered, Network, LogOut, Menu, X, Sparkles, Share2, GitFork, FlaskConical, CreditCard, KeyRound, Download, Bell, CheckCheck, Webhook, UserCog, ScrollText } from "lucide-react";
+import { BrainCircuit, LayoutDashboard, MessageSquare, Users, BellRing, Rocket, BarChart3, Settings2, Database, ListOrdered, Network, LogOut, Menu, X, Sparkles, Share2, GitFork, FlaskConical, CreditCard, KeyRound, Download, Bell, CheckCheck, Webhook, UserCog, ScrollText, BookOpen, Megaphone, Send } from "lucide-react";
 import { Outlet, NavLink } from "react-router-dom";
 import { useAuth, isAdminRole } from "../lib/useAuth";
 import { Avatar, cn, Button } from "../components/ui";
@@ -108,6 +108,8 @@ export default function Shell() {
     { to: "/app/conversations", label: "Conversaciones", icon: MessageSquare },
     { to: "/app/followups", label: "Follow-ups", icon: BellRing },
     { to: "/app/onboarding", label: "Onboarding", icon: Rocket },
+    { to: "/app/campaigns", label: "Campañas", icon: Megaphone },
+    { to: "/app/courses", label: "Cursos", icon: BookOpen },
     { to: "/app/analytics", label: "Analítica", icon: BarChart3 },
     { to: "/app/downline", label: "Red", icon: GitFork },
     { to: "/app/simulator", label: "Simulador", icon: FlaskConical },
@@ -182,6 +184,14 @@ export default function Shell() {
             <Share2 className="h-3.5 w-3.5" /> Ver mi funnel público
           </a>
         )}
+        <a
+          href="https://telegram.org/dl"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-center gap-2 rounded-xl border border-sky-500/20 bg-sky-500/5 px-3 py-2 text-xs font-semibold text-sky-400 transition hover:border-sky-400/40 hover:bg-sky-500/10"
+        >
+          <Send className="h-3.5 w-3.5" /> Descargar Telegram
+        </a>
         <div className="flex items-center gap-2.5 rounded-xl bg-white/5 p-2.5">
           <Avatar name={user?.name} size={34} />
           <div className="min-w-0 flex-1">
