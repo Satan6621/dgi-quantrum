@@ -1,0 +1,8 @@
+node_modules
+.env
+.env.local
+*.log
+.git
+.vercel
+apps/web/node_modules
+apps/web/.vercel
