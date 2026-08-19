@@ -2,19 +2,20 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy API package files
-COPY apps/api/package*.json ./apps/api/
+# Copy API package files first (for caching)
+COPY apps/api/package*.json ./
 
 # Install dependencies
-WORKDIR /app/apps/api
 RUN npm install
 
-# Copy API source
-COPY apps/api .
+# Copy API source and prisma
+COPY apps/api/src ./src
+COPY apps/api/prisma ./prisma
+COPY apps/api/tsconfig.json ./
 
 # Generate Prisma client
 RUN npx prisma generate
 
 EXPOSE 4000
 
-CMD ["npm", "start"]
+CMD ["npx", "tsx", "src/index.ts"]
