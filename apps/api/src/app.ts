@@ -26,6 +26,7 @@ import teamRoutes from "./routes/team.routes";
 import auditRoutes from "./routes/audit.routes";
 import pushRoutes from "./routes/push.routes";
 import integrationsRoutes from "./routes/integrations.routes";
+import telegramRoutes from "./routes/telegram.routes";
 import { openapi } from "./lib/openapi";
 
 export const app = express();
@@ -127,6 +128,7 @@ app.use("/api/team", teamRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/integrations", integrationsRoutes);
+app.use("/api", telegramRoutes);
 app.use("/api/v1", v1Routes);
 
 app.use("/api/v1/openapi.json", (_req, res) => res.json(openapi));
