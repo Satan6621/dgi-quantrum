@@ -1,24 +1,20 @@
 FROM node:20-alpine
 
-WORKDIR /app
+WORKDIR /app/apps/api
 
-# Copy API package files first (for caching)
+# Copy package files
 COPY apps/api/package*.json ./
 
-# Install ALL dependencies (including dev for prisma)
+# Install dependencies
 RUN npm install
 
-# Copy API source and prisma
+# Copy source code
 COPY apps/api/src ./src
 COPY apps/api/prisma ./prisma
 COPY apps/api/tsconfig.json ./
-COPY apps/api/scripts ./scripts
 
 # Generate Prisma client
 RUN npx prisma generate
-
-# Create data directory for SQLite
-RUN mkdir -p /app/data
 
 EXPOSE 4000
 
