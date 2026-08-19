@@ -393,4 +393,55 @@ r.get(
   })
 );
 
+r.get(
+  "/report",
+  asyncHandler(async (req, res) => {
+    const cacheKey = `report:${req.user!.orgId}:${req.user!.sub}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    const where = await leadWhere(req);
+    const [overview, velocity, sources, cohorts, funnel, scoreDistribution] = await Promise.all([
+      overviewData(req),
+      velocityMetrics(req),
+      sourceFunnel(req),
+      weeklyCohorts(req),
+      prisma.lead.groupBy({ by: ["status"], where, _count: { _all: true } }),
+      prisma.lead.findMany({ where, select: { score: true } }),
+    ]);
+
+    const statusMap: Record<string, number> = {};
+    for (const s of funnel) statusMap[s.status] = s._count._all;
+    const funnelData = {
+      stages: ["NEW", "IN_CONVERSATION", "NUTRITION", "HANDOFF", "ONBOARDING", "DISTRIBUTOR", "DISQUALIFIED"]
+        .map((k) => ({ status: k, count: statusMap[k] ?? 0 })),
+    };
+
+    const scoreBuckets = [
+      { label: "< 0", min: -999, max: -1, count: 0 },
+      { label: "0-2", min: 0, max: 2, count: 0 },
+      { label: "3-4", min: 3, max: 4, count: 0 },
+      { label: "5-6", min: 5, max: 6, count: 0 },
+      { label: "7+", min: 7, max: 999, count: 0 },
+    ];
+    for (const l of scoreDistribution) {
+      const b = scoreBuckets.find((x) => l.score >= x.min && l.score <= x.max);
+      if (b) b.count += 1;
+    }
+
+    const report = {
+      generatedAt: new Date().toISOString(),
+      overview,
+      velocity,
+      sources,
+      cohorts,
+      funnel: funnelData,
+      scoreDistribution: { buckets: scoreBuckets },
+    };
+
+    setCache(cacheKey, report, 60000);
+    res.json(report);
+  })
+);
+
 export default r;

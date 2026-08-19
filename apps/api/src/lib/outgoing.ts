@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { safeParseJson } from "./helpers";
 import { sendSlackMessage, buildLeadNotification } from "./slack";
+import { sendToZapier, buildZapierPayload } from "./zapier";
 
 const prisma = new PrismaClient();
 
@@ -45,6 +46,15 @@ export async function fire(org: any, event: OutgoingEvent, payload: any) {
   if (slackUrl && (event === "lead.created" || event === "lead.handoff" || event === "lead.onboarding")) {
     const message = buildLeadNotification(payload, event);
     void sendSlackMessage(slackUrl, message);
+  }
+
+  // Zapier adapter: if org has zapierWebhookUrl in channels config, also send there
+  const zapierUrl = settings.channels?.zapierWebhookUrl;
+  if (zapierUrl && (event === "lead.created" || event === "lead.handoff" || event === "lead.onboarding")) {
+    const zapierPayload = buildZapierPayload(event, payload, {
+      org: { id: org.id, slug: org.slug, name: org.name },
+    });
+    void sendToZapier(zapierUrl, zapierPayload);
   }
 }
 
